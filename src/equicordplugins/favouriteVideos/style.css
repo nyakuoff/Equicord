@@ -1,0 +1,81 @@
+.vc-favouriteVideos-embed-accessory {
+    inset-inline-start: 6px;
+    inset-inline-end: unset;
+    position: absolute;
+    top: 6px;
+    z-index: 3;
+    cursor: pointer;
+
+    :has(> &) {
+        position: relative;
+    }
+
+    :is(.imageWrapper:is(:hover, :focus-within) ~ &, :hover, :focus-within) > [class*="gifFavoriteButton"] {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vc-favouriteVideos-attachment-accessory {
+    cursor: pointer;
+
+    &:hover {
+        background: var(--interactive-background-hover);
+    }
+}
+
+.vc-favouriteVideos-container {
+    background: var(--background-base-lower);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden auto;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.vc-favouriteVideos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    padding: 12px;
+}
+
+.vc-favouriteVideos-tile {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--background-surface-high);
+}
+
+.vc-favouriteVideos-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    display: block;
+}
+
+.vc-favouriteVideos-tile-favorite-button {
+    position: absolute;
+    inset-inline-end: 6px;
+    top: 6px;
+    z-index: 3;
+    opacity: 1;
+}
+
+.vc-favouriteVideos-empty {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 24px;
+}
+
+.vc-favouriteVideos-empty-text {
+    text-align: center;
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
