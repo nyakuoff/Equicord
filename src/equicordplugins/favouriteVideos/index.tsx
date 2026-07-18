@@ -11,9 +11,9 @@ import { proxyLazyWebpack } from "@webpack";
 import { React } from "@webpack/common";
 import { ReactNode } from "react";
 
-import { AttachmentAccessory, EmbedAccessory, VideoTab } from "./components";
+import { AttachmentAccessory, EmbedAccessory, isOwnFavouritedVideoSrc, VideoTab } from "./components";
 import managedStyle from "./style.css?managed";
-import { AttachmentItem, CV2Attachment, EmbedComponent, VIDEO_TAB_ID, VideoTabProps } from "./types";
+import { AttachmentItem, CV2Attachment, EmbedComponent, FavouriteItem, FavouriteItemFormat, VIDEO_TAB_ID, VideoTabProps } from "./types";
 
 export const EmbedContext = proxyLazyWebpack(() => React.createContext<null | Embed>(null));
 export const AttachmentContext = proxyLazyWebpack(() => React.createContext<null | AttachmentItem>(null));
@@ -58,6 +58,15 @@ export default definePlugin({
                     replace: "=[$self.renderAttachmentAccessory()];"
                 }
             ]
+        },
+        {
+            // Hide our own favourited videos from the native GIF tab's own Favorites view - they get
+            // their own dedicated Videos tab instead, so showing them in both would just be duplicated.
+            find: '.sortBy("order").reverse().value()',
+            replacement: {
+                match: '.sortBy("order").reverse()',
+                replace: "$&.filter($self.filterOutOwnVideos)"
+            }
         },
         // EXPRESSION PICKER
         // Appends a brand new "Videos" tab and panel next to the native tabs, anchored on the sticker
@@ -106,5 +115,7 @@ export default definePlugin({
     renderEmbedAccessory: () => <EmbedAccessory />,
     renderVideoTab({ channel, closePopout }: VideoTabProps) {
         return <VideoTab channel={channel} closePopout={closePopout} />;
-    }
+    },
+    filterOutOwnVideos: (item: FavouriteItem) =>
+        item.format !== FavouriteItemFormat.VIDEO || !isOwnFavouritedVideoSrc(item.src)
 });

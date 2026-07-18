@@ -40,23 +40,42 @@ function isFavouritedVideoUrl(url: string): boolean {
     return !GIF_CDN_HOST_SUFFIXES.some(suffix => hostname === suffix || hostname.endsWith(`.${suffix}`));
 }
 
-function useFavouriteVideos(): (FavouriteItem & { url: string; })[] {
+type OwnFavouritedVideo = FavouriteItem & { url: string; };
+type OwnFavouritedVideosCache = { items: Record<string, FavouriteItem> | null; videos: OwnFavouritedVideo[]; srcs: Set<string>; };
+
+// UserSettingsProtoStore emits on any frecency change (emojis, stickers, ...), not just gif favourites,
+// so this is memoized on the favoriteGifs.gifs reference itself rather than recomputed on every call.
+// Shared by the Videos tab (which needs the full list) and the native GIF tab's own Favorites view
+// (which only needs to know which srcs are ours, so it can hide them - see $self.filterOutOwnVideos).
+let cache: OwnFavouritedVideosCache = { items: null, videos: [], srcs: new Set() };
+
+function getOwnFavouritedVideos(): OwnFavouritedVideosCache {
+    const items: Record<string, FavouriteItem> | null =
+        UserSettingsProtoStore.frecencyWithoutFetchingLatest.favoriteGifs?.gifs ?? null;
+    if (items === cache.items) return cache;
+
+    const videos = items
+        ? Object.entries(items)
+            .filter(([url, item]) => item.format === FavouriteItemFormat.VIDEO && isFavouritedVideoUrl(url))
+            .map(([url, item]) => ({ ...item, url }))
+            .sort((a, b) => b.order - a.order)
+        : [];
+
+    cache = { items, videos, srcs: new Set(videos.map(v => v.src)) };
+    return cache;
+}
+
+export function isOwnFavouritedVideoSrc(src: string): boolean {
+    return getOwnFavouritedVideos().srcs.has(src);
+}
+
+function useFavouriteVideos(): OwnFavouritedVideo[] {
     useEffect(() => void UserSettingsActionCreators.FrecencyUserSettingsActionCreators.loadIfNecessary(), []);
 
     return useStateFromStores(
         [UserSettingsProtoStore],
-        () => {
-            const items: Record<string, FavouriteItem> | null =
-                UserSettingsProtoStore.frecencyWithoutFetchingLatest.favoriteGifs?.gifs;
-            if (!items) return [];
-
-            return Object.entries(items)
-                .filter(([url, item]) => item.format === FavouriteItemFormat.VIDEO && isFavouritedVideoUrl(url))
-                .map(([url, item]) => ({ ...item, url }))
-                .sort((a, b) => b.order - a.order);
-        },
-        [],
-        (prev, next) => prev.length === next.length && prev.every((item, i) => item.url === next[i].url)
+        () => getOwnFavouritedVideos().videos,
+        []
     );
 }
 
